@@ -5,6 +5,9 @@
   "references": [
     {
       "path": "./apps/tagging"
+    },
+    {
+      "path": "./libs/images-db"
     }
   ]
 }
