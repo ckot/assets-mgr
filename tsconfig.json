@@ -11,6 +11,9 @@
     },
     {
       "path": "./libs/images-fs"
+    },
+    {
+      "path": "./tools/image-processor-cli"
     }
   ]
 }
