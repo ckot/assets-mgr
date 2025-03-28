@@ -28,7 +28,6 @@
             "tools/image-processor-cli/src/assets"
           ],
           "esbuildOptions": {
-
             "sourcemap": true,
             "outExtension": {
               ".js": ".js"
@@ -75,7 +74,7 @@
         "executor": "nx:run-commands",
         "options": {
           "commands": [
-            "sed -i -e '1i#!/usr/bin/env node' tools/image-processor-cli/dist/main.js",
+            "sed -i -e '1i\\#!/usr/bin/env node' tools/image-processor-cli/dist/main.js",
             "chmod +x tools/image-processor-cli/dist/main.js"
           ]
         },
@@ -84,5 +83,13 @@
         ]
       }
     }
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.4.0",
+    "@thesephist/tsqdm": "^0.1.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7"
   }
 }
