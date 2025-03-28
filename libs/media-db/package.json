@@ -13,7 +13,7 @@
     "./package.json": "./package.json"
   },
   "nx": {
-    "name": "images-db"
+    "name": "media-db"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0"
