@@ -10,7 +10,7 @@ const swcJestConfig = JSON.parse(
 swcJestConfig.swcrc = false;
 
 export default {
-  displayName: 'images-fs',
+  displayName: 'media-files',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {
