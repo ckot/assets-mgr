@@ -1,7 +1,7 @@
-import { imagesFs } from './images-fs';
+import { mediaFiles } from './media-files';
 
-describe('imagesFs', () => {
+describe('mediaFiles', () => {
   it('should work', () => {
-    expect(imagesFs()).toEqual('images-fs');
+    expect(mediaFiles()).toEqual('media-files');
   });
 });

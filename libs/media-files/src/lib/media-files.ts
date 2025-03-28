@@ -1,3 +1,3 @@
-export function imagesFs(): string {
-  return 'images-fs';
+export function mediaFiles(): string {
+  return 'media-files';
 }
