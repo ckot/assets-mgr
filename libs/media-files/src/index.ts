@@ -1,1 +1,1 @@
-export * from './lib/images-fs.js';
+export * from './lib/media-files.js';
