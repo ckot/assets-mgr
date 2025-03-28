@@ -10,7 +10,7 @@ const swcJestConfig = JSON.parse(
 swcJestConfig.swcrc = false;
 
 export default {
-  displayName: 'image-processor-cli',
+  displayName: 'media-processor-cli',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

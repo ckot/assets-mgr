@@ -7,7 +7,7 @@
     "image-processor": "./dist/main.js"
   },
   "nx": {
-    "name": "image-processor-cli",
+    "name": "media-processor-cli",
     "targets": {
       "build": {
         "executor": "@nx/esbuild:esbuild",
@@ -17,15 +17,15 @@
         "defaultConfiguration": "production",
         "options": {
           "platform": "node",
-          "outputPath": "tools/image-processor-cli/dist",
+          "outputPath": "tools/media-processor-cli/dist",
           "format": [
             "cjs"
           ],
           "bundle": false,
-          "main": "tools/image-processor-cli/src/main.ts",
-          "tsConfig": "tools/image-processor-cli/tsconfig.app.json",
+          "main": "tools/media-processor-cli/src/main.ts",
+          "tsConfig": "tools/media-processor-cli/tsconfig.app.json",
           "assets": [
-            "tools/image-processor-cli/src/assets"
+            "tools/media-processor-cli/src/assets"
           ],
           "esbuildOptions": {
             "sourcemap": true,
@@ -53,15 +53,15 @@
           "build"
         ],
         "options": {
-          "buildTarget": "image-processor-cli:build",
+          "buildTarget": "media-processor-cli:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "image-processor-cli:build:development"
+            "buildTarget": "media-processor-cli:build:development"
           },
           "production": {
-            "buildTarget": "image-processor-cli:build:production"
+            "buildTarget": "media-processor-cli:build:production"
           }
         }
       },
@@ -74,8 +74,8 @@
         "executor": "nx:run-commands",
         "options": {
           "commands": [
-            "sed -i -e '1i\\#!/usr/bin/env node' tools/image-processor-cli/dist/main.js",
-            "chmod +x tools/image-processor-cli/dist/main.js"
+            "sed -i -e '1i\\#!/usr/bin/env node' tools/media-processor-cli/dist/main.js",
+            "chmod +x tools/media-processor-cli/dist/main.js"
           ]
         },
         "dependsOn": [
