@@ -1,7 +1,7 @@
-import { imagesDb } from './images-db';
+import { mediaDb } from './media-db';
 
-describe('imagesDb', () => {
+describe('mediaDb', () => {
   it('should work', () => {
-    expect(imagesDb()).toEqual('images-db');
+    expect(mediaDb()).toEqual('media-db');
   });
 });

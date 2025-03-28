@@ -1,3 +1,3 @@
-export function imagesDb(): string {
-  return 'images-db';
+export function mediaDb(): string {
+  return 'media-db';
 }
