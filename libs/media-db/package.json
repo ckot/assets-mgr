@@ -1,5 +1,5 @@
 {
-  "name": "@assets-mgr/images-db",
+  "name": "@assets-mgr/media-db",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
