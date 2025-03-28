@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 
-console.log('Hello from image-processor-cli!');
+console.log('Hello from media-processor-cli!');

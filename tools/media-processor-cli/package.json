@@ -1,5 +1,5 @@
 {
-  "name": "@assets-mgr/image-processor-cli",
+  "name": "@assets-mgr/media-processor-cli",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
