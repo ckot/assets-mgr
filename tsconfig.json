@@ -14,6 +14,9 @@
     },
     {
       "path": "./tools/image-processor-cli"
+    },
+    {
+      "path": "./libs/media-config"
     }
   ]
 }

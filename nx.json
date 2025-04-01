@@ -28,7 +28,11 @@
           "watchDepsName": "watch-deps"
         }
       },
-      "exclude": ["libs/media-db/*", "libs/media-files/*"]
+      "exclude": [
+        "libs/media-db/*",
+        "libs/media-files/*",
+        "libs/media-config/*"
+      ]
     },
     {
       "plugin": "@nx/remix/plugin",
@@ -50,7 +54,11 @@
     },
     {
       "plugin": "@nx/js/typescript",
-      "include": ["libs/media-db/*", "libs/media-files/*"],
+      "include": [
+        "libs/media-db/*",
+        "libs/media-files/*",
+        "libs/media-config/*"
+      ],
       "options": {
         "typecheck": {
           "targetName": "typecheck"
