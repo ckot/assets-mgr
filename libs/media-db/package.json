@@ -16,7 +16,10 @@
     "name": "media-db"
   },
   "dependencies": {
-    "@prisma/client": "^6.5.0"
+    "@lancedb/lancedb": "^0.18.2",
+    "@prisma/client": "^6.5.0",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs-node": "^4.22.0"
   },
   "devDependencies": {
     "prisma": "^6.5.0"

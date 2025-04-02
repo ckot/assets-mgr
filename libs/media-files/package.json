@@ -15,5 +15,8 @@
   "nx": {
     "name": "media-files"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@thesephist/tsqdm": "^0.1.1",
+    "sharp": "^0.33.5"
+  }
 }

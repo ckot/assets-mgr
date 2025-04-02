@@ -85,9 +85,7 @@
     }
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.4.0",
-    "@thesephist/tsqdm": "^0.1.1",
-    "sharp": "^0.33.5"
+    "@inquirer/prompts": "^7.4.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7"
