@@ -4,6 +4,10 @@
 dist
 tmp
 out-tsc
+build
+/dist/
+/build/
+
 
 # dependencies
 node_modules
@@ -47,4 +51,14 @@ vitest.config.*.timestamp*
 test-output
 
 #env files
+.env
 .env.*
+!.env.example
+
+# Logs
+/logs/
+*.log
+
+# Temporary files
+/tmp/
+/temp/
