@@ -57,6 +57,18 @@ export function validateEnvironment(): { valid: boolean; errors: string[] } {
   };
 }
 
+// Helper function to validate environment variables
+function validateEnv(name: string, message?: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      message ||
+      `Required environment variable ${name} is not set. Please set this variable before starting the application.`
+    );
+  }
+  return value;
+}
+
 export const getConfig = () => {
   // Determine environment
   const environment = (process.env.NODE_ENV || 'development') as
