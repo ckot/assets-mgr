@@ -7,16 +7,16 @@
       "path": "./apps/tagging"
     },
     {
-      "path": "./libs/images-db"
-    },
-    {
-      "path": "./libs/images-fs"
-    },
-    {
-      "path": "./tools/image-processor-cli"
-    },
-    {
       "path": "./libs/media-config"
+    },
+    {
+      "path": "./tools/media-processor-cli"
+    },
+    {
+      "path": "./libs/media-files"
+    },
+    {
+      "path": "./libs/media-db"
     }
   ]
 }
