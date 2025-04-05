@@ -13,7 +13,77 @@
     "./package.json": "./package.json"
   },
   "nx": {
-    "name": "media-db"
+    "name": "media-db",
+    "targets": {
+      "prisma-generate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "libs/media-db",
+          "command": "dotenv -e .env.development -- npx prisma generate"
+        },
+        "configurations": {
+          "development": {
+            "command": "dotenv -e .env.development -- npx prisma generate"
+          },
+          "testing": {
+            "command": "dotenv -e .env.testing -- npx prisma generate"
+          },
+          "production": {
+            "command": "dotenv -e .env.production -- npx prisma generate"
+          }
+        }
+      },
+      "prisma-migrate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "libs/media-db",
+          "command": "dotenv -e .env.development -- npx prisma migrate deploy"
+        },
+        "configurations": {
+          "development": {
+            "command": "dotenv -e .env.development -- npx prisma migrate deploy"
+          },
+          "testing": {
+            "command": "dotenv -e .env.testing -- npx prisma migrate deploy"
+          },
+          "production": {
+            "command": "dotenv -e .env.production -- npx prisma migrate deploy"
+          }
+        }
+      },
+      "prisma-push-dev": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "libs/media-db",
+          "command": "dotenv -e .env.development -- npx prisma db push"
+        }
+      },
+      "prisma-push-reset": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "libs/media-db",
+          "command": "dotenv -e .env.development -- npx prisma db push --force-reset"
+        }
+      },
+      "prisma-studio": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "libs/media-db",
+          "command": "dotenv -e .env.development -- npx prisma studio"
+        },
+        "configurations": {
+          "development": {
+            "command": "dotenv -e .env.development -- npx prisma studio"
+          },
+          "testing": {
+            "command": "dotenv -e .env.testing -- npx prisma studio"
+          },
+          "production": {
+            "command": "dotenv -e .env.production -- npx prisma studio"
+          }
+        }
+      }
+    }
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.18.2",
