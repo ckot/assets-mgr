@@ -15,21 +15,28 @@
   "nx": {
     "name": "media-db",
     "targets": {
+      "prisma-validate": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "libs/media-db",
+          "command": "node run-prisma.js development \"npx prisma validate\""
+        }
+      },
       "prisma-generate": {
         "executor": "nx:run-commands",
         "options": {
           "cwd": "libs/media-db",
-          "command": "dotenv -e .env.development -- npx prisma generate"
+          "command": "node run-prisma.js development \"npx prisma generate\""
         },
         "configurations": {
           "development": {
-            "command": "dotenv -e .env.development -- npx prisma generate"
+            "command": "node run-prisma.js development \"npx prisma generate\""
           },
           "testing": {
-            "command": "dotenv -e .env.testing -- npx prisma generate"
+            "command": "node run-prisma.js testing \"npx prisma generate\""
           },
           "production": {
-            "command": "dotenv -e .env.production -- npx prisma generate"
+            "command": "node run-prisma.js production \"npx prisma generate\""
           }
         }
       },
@@ -37,17 +44,17 @@
         "executor": "nx:run-commands",
         "options": {
           "cwd": "libs/media-db",
-          "command": "dotenv -e .env.development -- npx prisma migrate deploy"
+          "command": "node run-prisma.js development \"npx prisma migrate dev\""
         },
         "configurations": {
           "development": {
-            "command": "dotenv -e .env.development -- npx prisma migrate deploy"
+            "command": "node run-prisma.js development \"npx prisma migrate dev\""
           },
           "testing": {
-            "command": "dotenv -e .env.testing -- npx prisma migrate deploy"
+            "command": "node run-prisma.js testing \"npx prisma migrate deploy\""
           },
           "production": {
-            "command": "dotenv -e .env.production -- npx prisma migrate deploy"
+            "command": "node run-prisma.js production \"npx prisma migrate deploy\""
           }
         }
       },
@@ -55,31 +62,31 @@
         "executor": "nx:run-commands",
         "options": {
           "cwd": "libs/media-db",
-          "command": "dotenv -e .env.development -- npx prisma db push"
+          "command": "node run-prisma.js development \"npx prisma db push\""
         }
       },
       "prisma-push-reset": {
         "executor": "nx:run-commands",
         "options": {
           "cwd": "libs/media-db",
-          "command": "dotenv -e .env.development -- npx prisma db push --force-reset"
+          "command": "node run-prisma.js development \"npx prisma db push --force-reset\""
         }
       },
       "prisma-studio": {
         "executor": "nx:run-commands",
         "options": {
           "cwd": "libs/media-db",
-          "command": "dotenv -e .env.development -- npx prisma studio"
+          "command": "node run-prisma.js development \"npx prisma studio\""
         },
         "configurations": {
           "development": {
-            "command": "dotenv -e .env.development -- npx prisma studio"
+            "command": "node run-prisma.js development \"npx prisma studio\""
           },
           "testing": {
-            "command": "dotenv -e .env.testing -- npx prisma studio"
+            "command": "node run-prisma.js testing \"npx prisma studio\""
           },
           "production": {
-            "command": "dotenv -e .env.production -- npx prisma studio"
+            "command": "node run-prisma.js production \"npx prisma studio\""
           }
         }
       }
@@ -89,9 +96,11 @@
     "@lancedb/lancedb": "^0.18.2",
     "@prisma/client": "^6.5.0",
     "@tensorflow-models/mobilenet": "^2.1.1",
-    "@tensorflow/tfjs-node": "^4.22.0"
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
+    "dotenv-cli": "^8.0.0",
     "prisma": "^6.5.0"
   }
 }
