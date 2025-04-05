@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("MEDIA_DB_URL")
+}
+
+
+// Media files (images, videos, etc.)
+model MediaFile {
+  id          Int    @id @default(autoincrement())
+  path        String    // Filesystem path
+  hash        String    @unique // MD5 or other hash
+  sourceUrl   String?   // Original URL if scraped
+  width       Int?
+  height      Int?
+  mimeType    String?
+  fileSize    Int?      // Size in bytes
+  title       String?
+  description String?
+  // Relationships
+  pins        Pin[]     // Pins that reference this media file
+  tags        Tag[]     // Tags associated with this media file
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Tags for media files
+model Tag {
+  id          Int      @id @default(autoincrement())
+  name        String      @unique
+  // Relationships
+  mediaFiles  MediaFile[] // Media files with this tag
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// Websites that contain boards
+model Website {
+  id          Int    @id @default(autoincrement())
+  url         String    @unique
+  name        String?
+  // Relationships
+  boards      Board[]   // Boards from this website
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Boards (can be hierarchical)
+model Board {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String?
+  url         String?   // Original URL of the board
+  // Hierarchical relationship
+  parentId    Int?
+  parent      Board?    @relation("BoardHierarchy", fields: [parentId], references: [id])
+  children    Board[]   @relation("BoardHierarchy")
+  // Website relationship
+  websiteId   Int
+  website     Website  @relation(fields: [websiteId], references: [id])
+  // Pins in this board
+  pins        Pin[]
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  // Indexes
+  @@index([parentId])
+  @@index([websiteId])
+  // Unique constraint to prevent duplicate boards with the same name under the same parent
+  @@unique([name, parentId, websiteId])
+}
+
+// Pins (links to media files with metadata)
+model Pin {
+  id          Int    @id @default(autoincrement())
+  title       String?
+  description String?
+  sourceUrl   String?   // Original URL of the pin
+  // Board relationship
+  boardId     Int
+  board       Board     @relation(fields: [boardId], references: [id])
+  // Media file relationship
+  mediaFileId Int?
+  mediaFile   MediaFile? @relation(fields: [mediaFileId], references: [id])
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Indexes
+  @@index([boardId])
+  @@index([mediaFileId])
+}
