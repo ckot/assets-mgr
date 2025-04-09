@@ -19,7 +19,6 @@ model MediaFile {
   id          Int    @id @default(autoincrement())
   path        String    // Filesystem path
   hash        String    @unique // MD5 or other hash
-  sourceUrl   String?   // Original URL if scraped
   width       Int?
   height      Int?
   mimeType    String?

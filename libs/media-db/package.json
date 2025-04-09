@@ -97,7 +97,8 @@
     "@prisma/client": "^6.5.0",
     "@tensorflow-models/mobilenet": "^2.1.1",
     "@tensorflow/tfjs-node": "^4.22.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "dotenv-cli": "^8.0.0",
