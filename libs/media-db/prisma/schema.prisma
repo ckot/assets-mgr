@@ -63,22 +63,22 @@ model Board {
   description String?
   url         String?   // Original URL of the board
   // Hierarchical relationship
-  parentId    Int?
-  parent      Board?    @relation("BoardHierarchy", fields: [parentId], references: [id])
+  parentID    Int?
+  parent      Board?    @relation("BoardHierarchy", fields: [parentID], references: [id])
   children    Board[]   @relation("BoardHierarchy")
   // Website relationship
-  websiteId   Int
-  website     Website  @relation(fields: [websiteId], references: [id])
+  websiteID   Int
+  website     Website  @relation(fields: [websiteID], references: [id])
   // Pins in this board
   pins        Pin[]
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   // Indexes
-  @@index([parentId])
-  @@index([websiteId])
-  // Unique constraint to prevent duplicate boards with the same name under the same parent
-  @@unique([name, parentId, websiteId])
+  @@index([parentID])
+  @@index([websiteID])
+  // Unique constraint to prevent duplicate board names on the same website
+  @@unique([name, websiteID], name: "uniqueBoardNamesPerWebsite")
 }
 
 // Pins (links to media files with metadata)
@@ -87,17 +87,23 @@ model Pin {
   title       String?
   description String?
   sourceUrl   String?   // Original URL of the pin
+  downloadStatus DownloadStatus? // Status of the download
   // Board relationship
-  boardId     Int
-  board       Board     @relation(fields: [boardId], references: [id])
+  boardID     Int
+  board       Board     @relation(fields: [boardID], references: [id])
   // Media file relationship
-  mediaFileId Int?
-  mediaFile   MediaFile? @relation(fields: [mediaFileId], references: [id])
+  mediaFileID Int?
+  mediaFile   MediaFile? @relation(fields: [mediaFileID], references: [id])
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   // Indexes
-  @@index([boardId])
-  @@index([mediaFileId])
+  @@index([boardID])
+  @@index([mediaFileID])
+}
+
+enum DownloadStatus {
+  SUCCESS
+  FAILED
 }
