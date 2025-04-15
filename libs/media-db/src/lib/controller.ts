@@ -1,8 +1,13 @@
 import { Prisma, PrismaClient} from "@prisma/client";
-import type {MediaFile, Tag, Website} from "@prisma/client"
+import type {Board, MediaFile, Pin, Tag, Website} from "@prisma/client"
 
 import type {
+  CreateResult,
+  RetrieveResult,
+  UpdateResult,
+  DeleteResult,
   GetPaginatedMediaFileParams,
+  GetPaginatedPinsParams,
   GetPaginatedTagsParams,
   NonEmptyArrayOfPositiveIntegers,
   // NonEmptyString,
@@ -16,6 +21,8 @@ import {
   DEFAULT_MEDIA_FILE_INCLUDES,
   DEFAULT_MEDIA_FILE_ORDER_BY,
   DEFAULT_MEDIA_FILE_SAMPLE_SIZE,
+  DEFAULT_PIN_INCLUDES,
+  DEFAULT_PIN_ORDER_BY,
   DEFAULT_TAG_INCLUDES,
   DEFAULT_TAG_ORDER_BY,
   // DEFAULT_WEBSITE_INCLUDES,
@@ -25,7 +32,24 @@ import {
 import { schemas } from "./schemas";
 
 import {
+  creationError,
+  creationFailure,
+  creationFoundPrexisting,
+  creationSuccessful,
+
+  retrievalError,
+  retrievalNotFound,
+  retrievalSuccessful,
+
+  updateError,
+  updateNotFound,
+  updateSuccessful,
+
+  deletionError,
+  deletionNotFound,
+  deletionSuccessful,
   genTagInclude,
+  generatePrismaErrorMessage,
   handlePrismaError,
   validatePaginationParams,
 } from "./helpers";
@@ -137,8 +161,7 @@ export class DBController {
    *
    * @param {string} url - The URL of the website
    * @param {string} name - The name of the website
-   * @returns {Promise<Website>} The created website
-   * @throws {Error} If the website creation fails (e.g., validation error, unique constraint violation)
+   * @returns {Promise<CreateResult<Website>>} The created website
    */
   async createWebSite({
     url,
@@ -146,16 +169,24 @@ export class DBController {
   }: {
     url: string;
     name: string;
-  }): Promise<Website> {
+  }): Promise<CreateResult<Website>> {
     try {
-      return await this.prisma.website.create({
-        data: {
-          url,
-          name,
-        },
+      const preExisting = await this.prisma.website.findUnique({
+        where: { url: url },
       });
+      if (preExisting) {
+        return creationFoundPrexisting<Website>(preExisting, 'Website');
+      } else {
+        const newWebsite = await this.prisma.website.create({
+          data: {
+            url,
+            name,
+          },
+        });
+        return creationSuccessful<Website>(newWebsite, 'Website');
+      }
     } catch (error: unknown) {
-      return handlePrismaError(error) as never;
+      return creationError<Website>(generatePrismaErrorMessage(error));
     }
   }
 
@@ -163,19 +194,21 @@ export class DBController {
    * Retrieves a website by its ID.
    *
    * @param {PositiveInteger} id - The ID of the website to retrieve
-   * @returns {Promise<Website>} The retrieved website
-   * @throws {Error} If the website is not found or another database error occurs
+   * @returns {Promise<RetrieveResult<Website>>} The retrieved website
    */
-  async getWebSiteByID(id: PositiveInteger): Promise<Website> {
-    const validatedID = schemas.positiveInteger.parse(id);
+  async getWebSiteByID(id: PositiveInteger): Promise<RetrieveResult<Website>> {
     try {
-      return await this.prisma.website.findUniqueOrThrow({
-        where: {
-          id: validatedID,
-        },
+      const validatedID = schemas.positiveInteger.parse(id);
+      const preExisting = await this.prisma.website.findUnique({
+        where: { id: validatedID },
       });
+      if (preExisting) {
+        return retrievalSuccessful<Website>(preExisting, 'Website');
+      } else {
+        return retrievalNotFound<Website>('Website');
+      }
     } catch (error: unknown) {
-      return handlePrismaError(error) as never;
+      return retrievalError<Website>(generatePrismaErrorMessage(error));
     }
   }
 
@@ -183,18 +216,56 @@ export class DBController {
    * Retrieves a website by its URL.
    *
    * @param {string} url - The URL of the website to retrieve
-   * @returns {Promise<Website>} The retrieved website
-   * @throws {Error} If the website is not found or another database error occurs
+   * @returns {Promise<RetrieveResult<Website>>} The retrieved website
    */
-  async getWebSiteByURL(url: string): Promise<Website> {
+  async getWebSiteByURL(url: string): Promise<RetrieveResult<Website>> {
     try {
-      return await this.prisma.website.findUniqueOrThrow({
+      const website = await this.prisma.website.findUnique({
         where: {
           url,
         },
       });
+      if (website) {
+        return retrievalSuccessful<Website>(website, 'Website');
+      } else {
+        return retrievalNotFound<Website>('Website');
+      }
     } catch (error: unknown) {
-      return handlePrismaError(error) as never;
+      return retrievalError<Website>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Deletes a website, specified by it's ID, from the database.
+   * This will also remove the website's boards, and pins associated with it.
+   * Any media files associated with the pins, and their tags will not be deleted.
+   * FIXME: I need to verify that the previous line is the case.
+   *
+   * @param {PositiveInteger} id
+   * @returns {Promise<DeleteResult<Website>>} The deleted website
+   */
+  async deleteWebsite(id: PositiveInteger): Promise<DeleteResult<Website>> {
+    try {
+      // runtime validation of id. will be caught in catchall of
+      // generatePrismaErrorMessage() if it throws
+      const validatedID = schemas.positiveInteger.parse(id);
+      const toDelete = await this.prisma.website.findUnique({
+        where: {
+          id: validatedID,
+        },
+      });
+      if (toDelete) {
+        const deleted = await this.prisma.website.delete({
+          where: {
+            id: validatedID,
+          },
+        });
+        return deletionSuccessful<Website>(deleted, 'Website');
+      } else {
+        return deletionNotFound<Website>('Website');
+      }
+    } catch (error: unknown) {
+      return deletionError<Website>(generatePrismaErrorMessage(error));
     }
   }
 
@@ -203,24 +274,313 @@ export class DBController {
    * @returns {Promise<PaginatedResult<Website>>} A paginated array of all websites
    */
   async getAllWebsites(): Promise<PaginatedResult<Website>> {
-
     return this.getPaginatedWebsites({
       whereClause: {},
       include: {},
       orderBy: DEFAULT_WEBSITE_ORDER_BY,
       page: DEFAULT_PAGE_NUMBER,
       pageSize: DEFAULT_PAGE_SIZE,
-    })
+    });
   }
 
-  async deleteWebsite(id: PositiveInteger): Promise<Website> {
-    const validatedID = schemas.positiveInteger.parse(id);
+  /**
+   * Creates a new board associated a website in the database. Optionally
+   * associates a parent board with this board.
+   *
+   * @param {PositiveInteger} websiteID - the website to associate the board with
+   * @param {BoardCreateInput} board - the board to create
+   * @param {string?} parentBoardName - (optional) the name of the parent board to associate with this board
+   * @returns {Promise<CreateResult<Board>>} The created board
+   */
+  async createWebsiteBoard(
+    websiteID: PositiveInteger,
+    board: Prisma.BoardCreateInput,
+    parentBoardName?: string
+  ): Promise<CreateResult<Board>> {
     try {
-      return await this.prisma.website.delete({
+      // runtime validation of websiteID
+      const validatedWebsiteID = schemas.positiveInteger.parse(websiteID);
+      const website = await this.prisma.website.findUnique({
         where: {
-          id: validatedID,
+          id: validatedWebsiteID,
         },
       });
+      if (!website) {
+        // can't create a board without a valid website
+        return creationFailure<Board>('Website');
+      }
+      const preExisting = await this.prisma.board.findUnique({
+        where: {
+          uniqueBoardNamesPerWebsite: {
+            name: board.name,
+            websiteID: website.id,
+          },
+        },
+      });
+      if (preExisting) {
+        // board with this name already exists for this website
+        return creationFoundPrexisting<Board>(
+          preExisting,
+          'Website/Board pair'
+        );
+      } else {
+        // Define the data with proper typing
+        const createData: Prisma.BoardCreateInput = {
+          ...board,
+          website: {
+            connect: {
+              id: website.id,
+            },
+          },
+        };
+
+        // If parentBoardName is provided, find the parent board and connect it
+        if (parentBoardName) {
+          const parentBoard = await this.prisma.board.findUnique({
+            where: {
+              uniqueBoardNamesPerWebsite: {
+                name: parentBoardName,
+                websiteID: website.id,
+              },
+            },
+          });
+
+          if (!parentBoard) {
+            return creationFailure<Board>('Parent Board on Website');
+          }
+
+          // Add parent connection to the create data
+          createData.parent = {
+            connect: {
+              id: parentBoard.id,
+            },
+          };
+        }
+        // create the board associated with the website
+        const newBoard = await this.prisma.board.create({
+          data: createData,
+        });
+        // Check if the tag with board.name already exists, and create it if not
+        const tag = await this.prisma.tag.findUnique({where: {name: board.name}});
+        if (!tag) {
+          await this.prisma.tag.create({
+            data: {
+              name: board.name,
+            },
+          });
+        }
+        return creationSuccessful<Board>(newBoard, 'Board');
+      }
+    } catch (error: unknown) {
+      return creationError<Board>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Retrieves a board by its name and the associated website ID.
+   *
+   * @param {PositiveInteger} websiteID - The ID of the website
+   * @param {string} boardName - The name of the board to retrieve
+   * @returns {Promise<RetrieveResult<Board>>} The retrieved board
+   */
+  async getWebsiteBoard(
+    websiteID: PositiveInteger,
+    boardName: string
+  ): Promise<RetrieveResult<Board>> {
+    try {
+      // runtime validation of websiteID
+      const validatedWebsiteID = schemas.positiveInteger.parse(websiteID);
+      const board = await this.prisma.board.findUnique({
+        where: {
+          uniqueBoardNamesPerWebsite: {
+            name: boardName,
+            websiteID: validatedWebsiteID,
+          }
+        },
+        include: {
+          website: true,
+          parent: true,
+        },
+      });
+      if (board) {
+        return retrievalSuccessful<Board>(board, 'Board');
+      } else {
+        return retrievalNotFound<Board>('Website/Board pair');
+      }
+    } catch (error: unknown) {
+      return retrievalError<Board>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  async updateWebsiteBoard(
+    websiteID: PositiveInteger,
+    boardName: string,
+    updateInfo: Prisma.BoardUpdateInput
+  ): Promise<UpdateResult<Board>> {
+    try {
+      // runtime validation of websiteID
+      const validatedWebsiteID = schemas.positiveInteger.parse(websiteID);
+      const board = await this.prisma.board.findUnique({
+        where: {
+          uniqueBoardNamesPerWebsite: {
+            name: boardName,
+            websiteID: validatedWebsiteID,
+          },
+        },
+      });
+      if (!board) {
+        return updateNotFound<Board>('Website/Board pair');
+      } else {
+        const updatedBoard = await this.prisma.board.update({
+          where: {
+            id: board.id,
+          },
+          data: {
+            ...updateInfo
+          },
+        });
+        if (board.name !== updatedBoard.name) {
+          // If the board name has changed, create a new  tag
+          await this.prisma.tag.upsert({
+            where: { name: updatedBoard.name },
+            update: {}, // we don't want to update anything if it exists
+            create: {
+              name: updatedBoard.name, // simply create if it doesn't exist
+            },
+          });
+        }
+        return updateSuccessful<Board>(updatedBoard, 'Board');
+      }
+    } catch (error: unknown) {
+      return updateError<Board>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Removes a board from a website. This will also remove the board's pins.
+   * Any media files associated with the pins, and their tags will not be deleted.
+   * FIXME: I need to verify that the previous line is the case.
+   *
+   * @param {PositiveInteger} websiteID
+   * @param {string} boardName
+   * @returns {DeleteResult<Board>} The deleted board
+   */
+  async deleteWebsiteBoard(
+    websiteID: PositiveInteger,
+    boardName: string
+  ): Promise<DeleteResult<Board>> {
+    try {
+      // runtime validation of websiteID
+      const validatedWebsiteID = schemas.positiveInteger.parse(websiteID);
+      const website = await this.prisma.website.findUnique({
+        where: {
+          id: validatedWebsiteID,
+        },
+      });
+      if (!website) {
+        return deletionNotFound<Board>('Website');
+      }
+      const board = await this.prisma.board.findUnique({
+        where: {
+          uniqueBoardNamesPerWebsite: {
+            name: boardName,
+            websiteID: website.id,
+          },
+        },
+      });
+      if (!board) {
+        return deletionNotFound<Board>('Website/Board pair');
+      }
+
+      const deletedBoard = await this.prisma.board.delete({
+        where: {
+          id: board.id,
+        },
+      });
+      return deletionSuccessful<Board>(deletedBoard, 'Board');
+    } catch (error: unknown) {
+      return deletionError<Board>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  async createBoardPin(
+    boardID: PositiveInteger,
+    pinData: Prisma.PinCreateInput,
+    mediaFileID?: PositiveInteger,
+  ): Promise<CreateResult<Pin>> {
+    try {
+      const validatedBoardID = schemas.positiveInteger.parse(boardID);
+      const board = await this.prisma.board.findUnique({
+        where: {
+          id: validatedBoardID,
+        },
+      });
+      if (!board) {
+        return creationFailure<Pin>('Board');
+      }
+      const createData: Prisma.PinCreateInput = {
+        ...pinData,
+        board: {
+          connect: {
+            id: board.id,
+          },
+        },
+      }
+      if (mediaFileID) {
+        // runtime validation of mediaFileID
+        const validatedMediaFileID = schemas.positiveInteger.parse(mediaFileID);
+        const mediaFile = await this.prisma.mediaFile.findUnique({
+          where: {
+            id: validatedMediaFileID,
+          },
+        });
+        if (!mediaFile) {
+          return creationFailure<Pin>('Media File');
+        }
+        // If a media file ID is provided, connect it to the pin
+        createData.mediaFile = {
+          connect: {
+            id: mediaFile.id,
+          },
+        };
+      }
+      // finally, create the pin
+      const newPin = await this.prisma.pin.create({
+        data: createData,
+      });
+      return creationSuccessful<Pin>(newPin, 'Pin');
+    } catch (error: unknown) {
+      return creationError<Pin>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  async getBoardPins(
+    boardID: PositiveInteger,
+    page = DEFAULT_PAGE_NUMBER,
+    pageSize = DEFAULT_PAGE_SIZE
+  ): Promise<PaginatedResult<Pin>> {
+    try {
+      const validatedBoardID = schemas.positiveInteger.parse(boardID);
+      const board = await this.prisma.board.findUnique({
+        where: {
+          id: validatedBoardID,
+        }
+      });
+      if (!board) {
+        throw Error('Board not found');
+      }
+      const whereClause: Prisma.PinWhereInput = {boardID: board.id};
+      const include: Prisma.PinInclude = {mediaFile: true};
+      const orderBy: Prisma.PinOrderByWithRelationInput = DEFAULT_PIN_ORDER_BY;
+      return await this.getPaginatedPins(
+        {
+          whereClause,
+          include,
+          orderBy,
+          page,
+          pageSize,
+        }
+      )
     } catch (error: unknown) {
       return handlePrismaError(error) as never;
     }
@@ -230,31 +590,27 @@ export class DBController {
    * Creates a new media file in the database.
    *
    * @param {Prisma.MediaFileCreateInput} mFile - The media file data to create
-   * @returns {Promise<MediaFile>} The created media file
-   * @throws {Error} If the media file creation fails (e.g., validation error, unique constraint violation)
+   * @returns {Promise<CreateResult<MediaFile>>} The created media file
    */
   async createMediaFile(
     mFile: Prisma.MediaFileCreateInput
-  ): Promise<MediaFile> {
+  ): Promise<CreateResult<MediaFile>> {
     try {
-      return await this.prisma.mediaFile.create({ data: mFile });
+      const preExisting = await this.prisma.mediaFile.findUnique({
+        where: {
+          hash: mFile.hash,
+        },
+      });
+      if (preExisting) {
+        return creationFoundPrexisting<MediaFile>(preExisting, 'MediaFile');
+      } else {
+        const newMediaFile = await this.prisma.mediaFile.create({
+          data: mFile,
+        });
+        return creationSuccessful<MediaFile>(newMediaFile, 'MediaFile');
+      }
     } catch (error: unknown) {
-      return handlePrismaError(error) as never;
-    }
-  }
-
-  /**
-   * Creates a new tag in the database.
-   *
-   * @param {Prisma.TagCreateInput} tag - The tag data to create
-   * @returns {Promise<Tag>} The created tag
-   * @throws {Error} If the tag creation fails (e.g., validation error, unique constraint violation)
-   */
-  async createTag(tag: Prisma.TagCreateInput): Promise<Tag> {
-    try {
-      return await this.prisma.tag.create({ data: tag });
-    } catch (error: unknown) {
-      return handlePrismaError(error) as never;
+      return creationError<MediaFile>(generatePrismaErrorMessage(error));
     }
   }
 
@@ -263,16 +619,15 @@ export class DBController {
    *
    * @param {PositiveInteger} mediaFileID - The ID of the media file to retrieve
    * @param {boolean} [includeTags=true] - Whether to include related tags in the result
-   * @returns {Promise<MediaFile>} The retrieved media file with its tags (if includeTags is true)
-   * @throws {Error} If the media file is not found or another database error occurs
+   * @returns {Promise<RetrieveResult<MediaFile>>} The retrieved media file with its tags (if includeTags is true)
    */
   async getMediaFileByID(
     mediaFileID: PositiveInteger,
     includeTags = true
-  ): Promise<MediaFile> {
-    const validatedMediaFileID = schemas.positiveInteger.parse(mediaFileID);
+  ): Promise<RetrieveResult<MediaFile>> {
     try {
-      return await this.prisma.mediaFile.findUniqueOrThrow({
+      const validatedMediaFileID = schemas.positiveInteger.parse(mediaFileID);
+      const mediaFile = await this.prisma.mediaFile.findUnique({
         where: {
           id: validatedMediaFileID,
         },
@@ -280,10 +635,202 @@ export class DBController {
           tags: includeTags,
         },
       });
+      if (mediaFile) {
+        return retrievalSuccessful<MediaFile>(mediaFile, 'MediaFile');
+      } else {
+        return retrievalNotFound<MediaFile>('MediaFile');
+      }
     } catch (error: unknown) {
-      return handlePrismaError(error) as never;
+      return retrievalError<MediaFile>(generatePrismaErrorMessage(error));
     }
   }
+
+  /**
+   * Deletes an media file from the database.
+   * This will also remove the media file from all associated tags.
+   * NOTE: This does not delete the media file from the filesystem.
+   *
+   * @param {PositiveInteger} mediaFileID - The ID of the media file to delete
+   * @returns {Promise<DeleteResult<MediaFile>>} The deleted media file
+   */
+  async deleteMediaFile(
+    mediaFileID: PositiveInteger
+  ): Promise<DeleteResult<MediaFile>> {
+    try {
+      const validatedMediaFileID = schemas.positiveInteger.parse(mediaFileID);
+      const mediaFile = await this.prisma.mediaFile.findUnique({
+        where: {
+          id: validatedMediaFileID,
+        },
+      });
+      if (!mediaFile) {
+        return deletionNotFound<MediaFile>('MediaFile');
+      } else {
+        const deletedMediaFile = await this.prisma.mediaFile.delete({
+          where: {
+            id: mediaFile.id,
+          },
+        });
+        return deletionSuccessful<MediaFile>(deletedMediaFile, 'MediaFile');
+      }
+    } catch (error: unknown) {
+      return deletionError<MediaFile>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Creates a new tag in the database.
+   *
+   * @param {Prisma.TagCreateInput} tag - The tag data to create
+   * @returns {Promise<CreateResult<Tag>>} The created tag
+   */
+  async createTag(tag: Prisma.TagCreateInput): Promise<CreateResult<Tag>> {
+    try {
+      const preExisting = await this.prisma.tag.findUnique({
+        where: {
+          name: tag.name,
+        },
+      });
+      if (preExisting) {
+        return creationFoundPrexisting<Tag>(preExisting, 'Tag');
+      } else {
+        const newTag = await this.prisma.tag.create({ data: tag });
+        return creationSuccessful<Tag>(newTag, 'Tag');
+      }
+    } catch (error: unknown) {
+      return creationError<Tag>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Retrieves a tag by its ID.
+   *
+   * @param {PositiveInteger} tagID - The ID of the tag to retrieve
+   * @param {boolean} [includeMediaFiles=false] - Whether to include related media files in the result
+   *
+   * @returns {Promise<RetrieveResult<Tag>>} The retrieved tag with its media files (if includeMediaFiless is true)
+   */
+  async getTagByID(
+    tagID = -1,
+    includeMediaFiles = false
+  ): Promise<RetrieveResult<Tag>> {
+    const validatedTagID = schemas.positiveInteger.parse(tagID);
+    try {
+      const tag = await this.prisma.tag.findUnique({
+        where: {
+          id: validatedTagID,
+        },
+        include: {
+          mediaFiles: includeMediaFiles,
+        },
+      });
+      if (tag) {
+        return retrievalSuccessful<Tag>(tag, 'Tag');
+      } else {
+        return retrievalNotFound<Tag>('Tag');
+      }
+    } catch (error: unknown) {
+      return retrievalError<Tag>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Retrieves a tag by its name.
+   *
+   * @param {string} tagName - The name of the tag to retrieve
+   * @param {boolean} [includeMediaFiless=false] - Whether to include related media filess in the result
+   *
+   * @returns {Promise<RetrieveResult<Tag>>} The retrieved tag with its media files (if includeMediaFiless is true)
+   */
+  async getTagByName(
+    tagName: string,
+    includeMediaFiles = false
+  ): Promise<RetrieveResult<Tag>> {
+    try {
+      const tag = await this.prisma.tag.findUnique({
+        where: {
+          name: tagName,
+        },
+        include: {
+          mediaFiles: includeMediaFiles,
+        },
+      });
+      if (tag) {
+        return retrievalSuccessful<Tag>(tag, 'Tag');
+      } else {
+        return retrievalNotFound<Tag>('Tag');
+      }
+    } catch (error: unknown) {
+      return retrievalError<Tag>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Renames a tag.
+   *
+   * @param {PositiveInteger} tagID - The ID of the tag to rename
+   * @param {string} newName - The new name for the tag
+   * @returns {Promise<UpdateResult<Tag>>} The updated tag
+   */
+  async updateTag(
+    tagID: PositiveInteger,
+    newName: string
+  ): Promise<UpdateResult<Tag>> {
+    try {
+      const validatedTagID = schemas.positiveInteger.parse(tagID);
+      const existingTag = await this.prisma.tag.findUnique({
+        where: {
+          id: validatedTagID,
+        },
+      });
+      if (!existingTag) {
+        return updateNotFound<Tag>('Tag');
+      } else {
+        const updatedTag = await this.prisma.tag.update({
+          where: {
+            id: existingTag.id,
+          },
+          data: {
+            name: newName,
+          },
+        });
+        return updateSuccessful<Tag>(updatedTag, 'Tag');
+      }
+    } catch (error: unknown) {
+      return updateError<Tag>(generatePrismaErrorMessage(error));
+    }
+  }
+
+  /**
+   * Deletes a tag from the database.
+   * This will also remove the tag from all associated media files.
+   *
+   * @param {PositiveInteger} tagID - The ID of the tag to delete
+   * @returns {Promise<DeleteResult<Tag>>} The deleted tag
+   */
+  async deleteTag(tagID: PositiveInteger): Promise<DeleteResult<Tag>> {
+    try {
+      const validatedTagID = schemas.positiveInteger.parse(tagID);
+      const tag = await this.prisma.tag.findUnique({
+        where: {
+          id: validatedTagID,
+        },
+      });
+      if (!tag) {
+        return deletionNotFound<Tag>('Tag');
+      } else {
+        const deletedTag = await this.prisma.tag.delete({
+          where: {
+            id: tag.id,
+          },
+        });
+        return deletionSuccessful<Tag>(deletedTag, 'Tag');
+      }
+    } catch (error: unknown) {
+      return deletionError<Tag>(generatePrismaErrorMessage(error));
+    }
+  }
+
   /**
    * Retrieves all tags from the database, sorted alphabetically by name and paginated
    *
@@ -329,7 +876,7 @@ export class DBController {
   async searchTags({
     substring = '', // default value will fail validation
     includeSampleMediaFiles = false,
-    sampleSize = 5,
+    sampleSize = DEFAULT_MEDIA_FILE_SAMPLE_SIZE,
     page = DEFAULT_PAGE_NUMBER,
     pageSize = DEFAULT_PAGE_SIZE,
   }): Promise<PaginatedResult<Tag>> {
@@ -348,55 +895,6 @@ export class DBController {
       page,
       pageSize,
     });
-  }
-
-  /**
-   * Retrieves a tag by its ID.
-   *
-   * @param {PositiveInteger} tagID - The ID of the tag to retrieve
-   * @param {boolean} [includeMediaFiles=false] - Whether to include related media files in the result
-   *
-   * @returns {Promise<Tag>} The retrieved tag with its media files (if includeMediaFiless is true)
-   * @throws {Error} If the tag is not found or another database error occurs
-   */
-  async getTagByID(tagID = -1, includeMediaFiles = false): Promise<Tag> {
-    const validatedTagID = schemas.positiveInteger.parse(tagID);
-    try {
-      return await this.prisma.tag.findUniqueOrThrow({
-        where: {
-          id: validatedTagID,
-        },
-        include: {
-          mediaFiles: includeMediaFiles,
-        },
-      });
-    } catch (error: unknown) {
-      return handlePrismaError(error) as never;
-    }
-  }
-
-  /**
-   * Retrieves a tag by its name.
-   *
-   * @param {string} tagName - The name of the tag to retrieve
-   * @param {boolean} [includeMediaFiless=false] - Whether to include related media filess in the result
-   *
-   * @returns {Promise<Tag>} The retrieved tag with its media files (if includeMediaFiless is true)
-   * @throws {Error} If the tag is not found or another database error occurs
-   */
-  async getTagByName(tagName: string, includeMediaFiles = false): Promise<Tag> {
-    try {
-      return await this.prisma.tag.findUniqueOrThrow({
-        where: {
-          name: tagName,
-        },
-        include: {
-          mediaFiles: includeMediaFiles,
-        },
-      });
-    } catch (error: unknown) {
-      return handlePrismaError(error) as never;
-    }
   }
 
   /**
@@ -459,30 +957,6 @@ export class DBController {
       page,
       pageSize,
     });
-  }
-
-  /**
-   * Renames a tag.
-   *
-   * @param {PositiveInteger} tagID - The ID of the tag to rename
-   * @param {string} newName - The new name for the tag
-   * @returns {Promise<Tag>} The updated tag
-   * @throws {Error} If the tag is not found, the new name conflicts with an existing tag, or another database error occurs
-   */
-  async renameTag(tagID: PositiveInteger, newName: string): Promise<Tag> {
-    const validatedTagID = schemas.positiveInteger.parse(tagID);
-    try {
-      return await this.prisma.tag.update({
-        where: {
-          id: validatedTagID,
-        },
-        data: {
-          name: newName,
-        },
-      });
-    } catch (error: unknown) {
-      return handlePrismaError(error) as never;
-    }
   }
 
   /**
@@ -559,48 +1033,6 @@ export class DBController {
         },
         include: {
           tags: true,
-        },
-      });
-    } catch (error: unknown) {
-      return handlePrismaError(error) as never;
-    }
-  }
-
-  /**
-   * Deletes an media file from the database.
-   * This will also remove the media file from all associated tags.
-   *
-   * @param {PositiveInteger} mediaFileID - The ID of the media file to delete
-   * @returns {Promise<MediaFile>} The deleted media file
-   * @throws {Error} If the media file is not found or another database error occurs
-   */
-  async deleteMediaFile(mediaFileID: PositiveInteger): Promise<MediaFile> {
-    const validatedMediaFileID = schemas.positiveInteger.parse(mediaFileID);
-    try {
-      return await this.prisma.mediaFile.delete({
-        where: {
-          id: validatedMediaFileID,
-        },
-      });
-    } catch (error: unknown) {
-      return handlePrismaError(error) as never;
-    }
-  }
-
-  /**
-   * Deletes a tag from the database.
-   * This will also remove the tag from all associated media files.
-   *
-   * @param {PositiveInteger} tagID - The ID of the tag to delete
-   * @returns {Promise<Tag>} The deleted tag
-   * @throws {Error} If the tag is not found or another database error occurs
-   */
-  async deleteTag(tagID: PositiveInteger): Promise<Tag> {
-    const validatedTagID = schemas.positiveInteger.parse(tagID);
-    try {
-      return await this.prisma.tag.delete({
-        where: {
-          id: validatedTagID,
         },
       });
     } catch (error: unknown) {
@@ -719,12 +1151,20 @@ export class DBController {
 
       return {
         data,
+        success: true,
+        message: 'Data retrieved successfully',
         total,
         page: pageNum,
         pageSize: numPerPage,
       };
     } catch (error: unknown) {
-      return handlePrismaError(error) as never;
+      return {
+        success: false,
+        message: generatePrismaErrorMessage(error),
+        total: 0,
+        page: pageNum,
+        pageSize: numPerPage,
+      };
     }
   }
 
@@ -802,6 +1242,29 @@ export class DBController {
     });
   }
 
+  private async getPaginatedPins({
+    whereClause = {},
+    include = DEFAULT_PIN_INCLUDES,
+    orderBy = DEFAULT_PIN_ORDER_BY,
+    page = DEFAULT_PAGE_NUMBER,
+    pageSize = DEFAULT_PAGE_SIZE,
+  }: GetPaginatedPinsParams = {}) : Promise<PaginatedResult<Pin>> {
+    return await this.getPaginated<
+      Pin,
+      Prisma.PinWhereInput,
+      Prisma.PinInclude,
+      Prisma.PinOrderByWithRelationInput
+    >({
+      model: this.prisma.pin,
+      whereClause,
+      include,
+      orderBy,
+      page,
+      pageSize,
+    });
+
+  }
+
   /**
    * Website model-specific wrapper around getPaginated()
    *
@@ -829,8 +1292,7 @@ export class DBController {
     orderBy?: Prisma.WebsiteOrderByWithRelationInput;
     page?: number;
     pageSize?: number;
-  } = {
-  }) {
+  } = {}) {
     return await this.getPaginated<
       Website,
       Prisma.WebsiteWhereInput,
@@ -842,12 +1304,9 @@ export class DBController {
       include,
       orderBy,
       page,
-      pageSize
+      pageSize,
     });
   }
-
-
-
 }
 
 /**
