@@ -17,6 +17,12 @@
     },
     {
       "path": "./libs/media-db"
+    },
+    {
+      "path": "./libs/media-processor-plugins"
+    },
+    {
+      "path": "./libs/media-processor-core"
     }
   ]
 }

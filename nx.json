@@ -31,7 +31,9 @@
       "exclude": [
         "libs/media-db/*",
         "libs/media-files/*",
-        "libs/media-config/*"
+        "libs/media-config/*",
+        "libs/media-processor-plugins/*",
+        "libs/media-processor-core/*"
       ]
     },
     {
@@ -57,7 +59,9 @@
       "include": [
         "libs/media-db/*",
         "libs/media-files/*",
-        "libs/media-config/*"
+        "libs/media-config/*",
+        "libs/media-processor-plugins/*",
+        "libs/media-processor-core/*"
       ],
       "options": {
         "typecheck": {
