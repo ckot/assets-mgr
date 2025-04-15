@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client"
 import { z } from "zod";
 import { schemas } from "./schemas";
 // types for my prisma models
-export type { MediaFile, Tag } from "@prisma/client";
+export type { Board, MediaFile, Pin, Tag, Website } from "@prisma/client";
 
 // types based of my zod schemas
 export type NonEmptyArrayOfPositiveIntegers = z.infer<
