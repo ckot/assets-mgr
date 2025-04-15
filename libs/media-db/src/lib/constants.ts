@@ -28,3 +28,6 @@ export const DEFAULT_WEBSITE_ORDER_BY: Prisma.WebsiteOrderByWithRelationInput = 
 // export const DEFAULT_WEBSITE_INCLUDES: Prisma.WebsiteInclude = {
 //   boards: false,
 // };
+export const DEFAULT_PIN_INCLUDES: Prisma.PinInclude = {mediaFile: true};
+export const DEFAULT_PIN_ORDER_BY: Prisma.PinOrderByWithRelationInput = {sourceUrl: "asc"};
+
