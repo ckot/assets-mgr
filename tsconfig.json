@@ -11,6 +11,9 @@
     },
     {
       "path": "./libs/media-db"
+    },
+    {
+      "path": "./libs/media-files"
     }
   ]
 }
