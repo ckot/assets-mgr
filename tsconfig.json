@@ -14,6 +14,9 @@
     },
     {
       "path": "./libs/media-files"
+    },
+    {
+      "path": "./tools/media-cli"
     }
   ]
 }

@@ -1,0 +1,71 @@
+{
+  "name": "@assets-mgr/media-cli",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "media-cli",
+    "targets": {
+      "build": {
+        "executor": "@nx/esbuild:esbuild",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "defaultConfiguration": "production",
+        "options": {
+          "platform": "node",
+          "outputPath": "tools/media-cli/dist",
+          "format": [
+            "cjs"
+          ],
+          "bundle": false,
+          "main": "tools/media-cli/src/main.ts",
+          "tsConfig": "tools/media-cli/tsconfig.app.json",
+          "assets": [
+            "tools/media-cli/src/assets"
+          ],
+          "esbuildOptions": {
+            "sourcemap": true,
+            "outExtension": {
+              ".js": ".js"
+            }
+          }
+        },
+        "configurations": {
+          "development": {},
+          "production": {
+            "esbuildOptions": {
+              "sourcemap": false,
+              "outExtension": {
+                ".js": ".js"
+              }
+            }
+          }
+        }
+      },
+      "serve": {
+        "executor": "@nx/js:node",
+        "defaultConfiguration": "development",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "buildTarget": "media-cli:build",
+          "runBuildTargetDependencies": false
+        },
+        "configurations": {
+          "development": {
+            "buildTarget": "media-cli:build:development"
+          },
+          "production": {
+            "buildTarget": "media-cli:build:production"
+          }
+        }
+      },
+      "test": {
+        "options": {
+          "passWithNoTests": true
+        }
+      }
+    }
+  }
+}
