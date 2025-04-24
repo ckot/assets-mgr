@@ -8,6 +8,9 @@
     },
     {
       "path": "./libs/media-config"
+    },
+    {
+      "path": "./libs/media-db"
     }
   ]
 }
